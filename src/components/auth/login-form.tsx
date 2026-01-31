@@ -2,10 +2,12 @@
 
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { signInWithUsernameAndPassword } from '@/utils/auth/supabase-auth';
 
 export function LoginForm() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<
@@ -26,8 +28,7 @@ export function LoginForm() {
     }
 
     setStatus({ type: 'success' });
-    // TODO: where to go after login:
-    // - set up a protected route and redirect there (e.g. /dashboard)
+    router.replace('/dashboard');
   }
 
   return (

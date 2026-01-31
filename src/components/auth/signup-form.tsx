@@ -2,10 +2,12 @@
 
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { signUpWithUsernameAndPassword } from '@/utils/auth/supabase-auth';
 
 export function SignupForm() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<
@@ -26,6 +28,7 @@ export function SignupForm() {
     }
 
     setStatus({ type: 'success' });
+    router.replace('/dashboard');
   }
 
   return (

@@ -4,6 +4,8 @@
 
 - **Login page**: `app/(auth)/login/page.tsx`
 - **Signup page**: `app/(auth)/signup/page.tsx`
+- **Dashboard (post-login)**: `app/(app)/dashboard/page.tsx`
+- **App shell layout (topbar + sidebar)**: `app/(app)/layout.tsx` + `src/components/layout/*`
 - **Supabase browser client**: `src/utils/supabase/browser-client.ts`
 - **Auth calls (sign in / sign up)**: `src/utils/auth/supabase-auth.ts`
 
@@ -26,3 +28,5 @@ npm run dev
 ```
 
 Then open `/login` or `/signup`.
+
+After signing in, you’ll land on `/dashboard`.
