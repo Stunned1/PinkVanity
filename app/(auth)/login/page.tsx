@@ -5,7 +5,7 @@ export default function LoginPage() {
   return (
     <AuthCard
       footer={{ text: "Don't have an account?", href: '/signup', linkText: 'Create one' }}
-      subtitle="Use your email and password to sign in."
+      subtitle="Use a username and password to sign in."
       title="Sign in"
     >
       <LoginForm />

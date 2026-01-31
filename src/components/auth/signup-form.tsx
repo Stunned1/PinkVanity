@@ -3,10 +3,10 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 
-import { signUpWithEmailAndPassword } from '@/utils/auth/supabase-auth';
+import { signUpWithUsernameAndPassword } from '@/utils/auth/supabase-auth';
 
 export function SignupForm() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<
     | { readonly type: 'idle' }
@@ -19,7 +19,7 @@ export function SignupForm() {
     e.preventDefault();
     setStatus({ type: 'loading' });
 
-    const res = await signUpWithEmailAndPassword({ email, password });
+    const res = await signUpWithUsernameAndPassword({ username, password });
     if (!res.ok) {
       setStatus({ type: 'error', message: res.error.message });
       return;
@@ -31,16 +31,15 @@ export function SignupForm() {
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
       <label className="block">
-        <div className="text-sm text-zinc-200">Email</div>
+        <div className="text-sm text-zinc-200">Username</div>
         <input
-          autoComplete="email"
+          autoComplete="username"
           className="mt-1 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-50 outline-none ring-0 placeholder:text-zinc-600 focus:border-zinc-600"
-          inputMode="email"
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@domain.com"
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="alice"
           required
-          type="email"
-          value={email}
+          type="text"
+          value={username}
         />
       </label>
 

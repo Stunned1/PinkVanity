@@ -16,6 +16,7 @@
   - This is the place to adjust client options, add headers, swap to SSR helpers, etc.
 - **Call Supabase auth methods**: `src/utils/auth/supabase-auth.ts`
   - This is where `supabase.auth.signInWithPassword(...)` and `supabase.auth.signUp(...)` live.
+  - Note: for hackathon “username + password”, we map username → a deterministic fake email in `src/utils/auth/username-email.ts`.
 
 ### Run it
 

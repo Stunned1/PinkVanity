@@ -1,20 +1,29 @@
 import { logger } from '@/utils/logger';
 import { err, ok, type Result } from '@/utils/result';
 import { getSupabaseBrowserClient } from '@/utils/supabase/browser-client';
+import { usernameToEmail } from '@/utils/auth/username-email';
 
 export type AuthFailure = {
   readonly message: string;
   readonly code?: string;
 };
 
-export async function signInWithEmailAndPassword(input: {
-  readonly email: string;
+export async function signInWithUsernameAndPassword(input: {
+  readonly username: string;
   readonly password: string;
 }): Promise<Result<void, AuthFailure>> {
+  let email: string;
+  try {
+    email = usernameToEmail(input.username);
+  } catch (e) {
+    if (e instanceof Error) return err({ message: e.message });
+    return err({ message: 'Invalid username.' });
+  }
+
   try {
     const supabase = getSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithPassword({
-      email: input.email,
+      email,
       password: input.password
     });
 
@@ -29,15 +38,28 @@ export async function signInWithEmailAndPassword(input: {
   }
 }
 
-export async function signUpWithEmailAndPassword(input: {
-  readonly email: string;
+export async function signUpWithUsernameAndPassword(input: {
+  readonly username: string;
   readonly password: string;
 }): Promise<Result<void, AuthFailure>> {
+  let email: string;
+  try {
+    email = usernameToEmail(input.username);
+  } catch (e) {
+    if (e instanceof Error) return err({ message: e.message });
+    return err({ message: 'Invalid username.' });
+  }
+
   try {
     const supabase = getSupabaseBrowserClient();
     const { error } = await supabase.auth.signUp({
-      email: input.email,
-      password: input.password
+      email,
+      password: input.password,
+      options: {
+        data: {
+          username: input.username
+        }
+      }
     });
 
     if (error) {
