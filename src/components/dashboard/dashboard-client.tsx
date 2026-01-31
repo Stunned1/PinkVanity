@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { WritingSurface } from '@/components/dashboard/writing-surface';
+import { NotesWorkspace } from '@/components/notes/notes-workspace';
 import { getSupabaseBrowserClient } from '@/utils/supabase/browser-client';
 
 type ViewState =
@@ -72,7 +72,7 @@ export function DashboardClient() {
   }
 
   return (
-    <WritingSurface username={state.username} />
+    <NotesWorkspace username={state.username} />
   );
 }
 
