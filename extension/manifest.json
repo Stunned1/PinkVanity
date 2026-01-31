@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "PinkVanity",
+  "version": "0.0.1",
+  "description": "Hackathon MVP: vanity sizing + pink tax helpers for shopping.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www.ae.com/*",
+    "https://www.zara.com/*",
+    "https://www2.hm.com/*"
+  ],
+  "background": {
+    "service_worker": "dist/background.js"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.ae.com/*",
+        "https://www.zara.com/*",
+        "https://www2.hm.com/*"
+      ],
+      "js": ["dist/content/content-script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
+
