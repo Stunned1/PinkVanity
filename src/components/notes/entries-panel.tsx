@@ -4,6 +4,17 @@ import { useEffect, useState } from 'react';
 
 import type { JournalEntry } from '@/types/journal-entry.types';
 
+function formatEntryDate(entryDate: string): string {
+  // Hackathon-friendly: if ISO, show a nicer label; otherwise fall back.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(entryDate)) {
+    const [y, m, d] = entryDate.split('-').map(Number);
+    const dt = new Date(y, (m ?? 1) - 1, d ?? 1);
+    return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  return entryDate;
+}
+
 export function EntriesPanel(props: {
   readonly notes: readonly JournalEntry[];
   readonly selectedNoteId: string | null;
@@ -47,7 +58,9 @@ export function EntriesPanel(props: {
                 onClick={() => setOpenId((prev) => (prev === note.id ? null : note.id))}
                 type="button"
               >
-                <div className="text-sm font-medium text-zinc-100">{note.entryDate}</div>
+                <div className="text-sm font-medium text-zinc-100">
+                  {formatEntryDate(note.entryDate)}
+                </div>
                 <div className="text-xs text-zinc-500">{isOpen ? 'Hide' : 'Show'}</div>
               </button>
 

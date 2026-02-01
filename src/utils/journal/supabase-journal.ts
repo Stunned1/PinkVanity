@@ -42,6 +42,8 @@ export async function listJournalEntries(): Promise<Result<readonly JournalEntry
     const { data, error } = await supabase
       .from('journal_entries')
       .select('id,user_id,entry_date,body,updated_at')
+      // Sort by entry_date first (your "journal date"), then by updated_at for ties.
+      .order('entry_date', { ascending: false })
       .order('updated_at', { ascending: false });
 
     if (error) return err({ message: error.message });

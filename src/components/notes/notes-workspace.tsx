@@ -12,22 +12,25 @@ import {
   updateJournalEntry
 } from '@/utils/journal/supabase-journal';
 
-const HARD_CODED_ENTRY_DATE = 'Jan 31, 2026';
+// HACKATHON NOTE:
+// Store entry dates as ISO strings so sorting works lexicographically (YYYY-MM-DD).
+// Later you can format for display and/or change the DB column to a real `date` type.
+const HARD_CODED_ENTRY_DATE = '2026-01-31';
+
+function sortEntries(entries: readonly JournalEntry[]): JournalEntry[] {
+  return entries
+    .slice()
+    .sort((a, b) => b.entryDate.localeCompare(a.entryDate) || b.updatedAt.localeCompare(a.updatedAt));
+}
 
 function upsertEntry(entries: readonly JournalEntry[], next: JournalEntry): JournalEntry[] {
   const idx = entries.findIndex((n) => n.id === next.id);
-  if (idx === -1) return [next, ...entries];
+  if (idx === -1) return sortEntries([next, ...entries]);
 
   const copy = entries.slice();
   copy[idx] = next;
 
-  // Bring updated entry to the top (notes-app feel).
-  if (idx !== 0) {
-    const [moved] = copy.splice(idx, 1);
-    copy.unshift(moved);
-  }
-
-  return copy;
+  return sortEntries(copy);
 }
 
 function removeEntry(entries: readonly JournalEntry[], id: string): JournalEntry[] {
@@ -84,7 +87,7 @@ export function NotesWorkspace(_props: { readonly username: string }) {
       return;
     }
 
-    setEntries((prev) => [res.value, ...prev]);
+    setEntries((prev) => sortEntries([res.value, ...prev]));
     setSelectedId(res.value.id);
     setStatus({ type: 'ready' });
   }
@@ -119,8 +122,8 @@ export function NotesWorkspace(_props: { readonly username: string }) {
     saveTimerRef.current = window.setTimeout(async () => {
       const id = pendingSaveIdRef.current;
       if (!id) return;
-      const entry = entries.find((e) => e.id === id) ?? updated;
-      await updateJournalEntry({ id: entry.id, body: entry.body });
+      // Use the latest body we just applied (this timer gets reset on every keystroke).
+      await updateJournalEntry({ id, body: updated.body });
     }, 500);
   }
 
