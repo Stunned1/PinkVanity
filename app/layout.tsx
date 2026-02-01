@@ -4,6 +4,7 @@ import './globals.css';
 import { ReminderPoller } from '@/components/reminders/reminder-poller';
 
 import { CursorGlow } from '@/components/ui/cursor-glow';
+import { ListenOnlyProvider } from '@/components/settings/listen-only-provider';
 
 export const metadata: Metadata = {
   title: 'Wayfourth',
@@ -18,8 +19,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-zinc-950 text-zinc-50 antialiased">
-      <ReminderPoller />
-        {children}
+        <ReminderPoller />
+        <ListenOnlyProvider>{children}</ListenOnlyProvider>
         <CursorGlow />
       </body>
     </html>

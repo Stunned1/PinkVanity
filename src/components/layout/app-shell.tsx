@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { Topbar } from '@/components/layout/topbar';
+import { CatTherapistPeek } from '@/components/ui/cat-therapist-peek';
 
 export function AppShell(props: { readonly children: ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export function AppShell(props: { readonly children: ReactNode }) {
         <SidebarNav />
         <div className="min-w-0">{props.children}</div>
       </div>
+      <CatTherapistPeek />
     </div>
   );
 }
