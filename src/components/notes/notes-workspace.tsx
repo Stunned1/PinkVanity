@@ -49,6 +49,7 @@ export function NotesWorkspace(_props: { readonly username: string }) {
 
   const saveTimerRef = useRef<number | null>(null);
   const pendingSaveIdRef = useRef<string | null>(null);
+  const ensuredInitialRef = useRef(false);
 
   const selected = selectedId ? entries.find((n) => n.id === selectedId) ?? null : null;
 
@@ -67,8 +68,9 @@ export function NotesWorkspace(_props: { readonly username: string }) {
         return;
       }
 
-      setEntries(res.value);
-      setSelectedId(res.value[0]?.id ?? null);
+      const sorted = sortEntries(res.value);
+      setEntries(sorted);
+      setSelectedId(sorted[0]?.id ?? null);
       setStatus({ type: 'ready' });
     }
 
@@ -78,6 +80,16 @@ export function NotesWorkspace(_props: { readonly username: string }) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (status.type !== 'ready') return;
+    if (ensuredInitialRef.current) return;
+    if (entries.length > 0) return;
+
+    ensuredInitialRef.current = true;
+    void createEntry();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status.type, entries.length]);
 
   async function createEntry() {
     setIsEntriesOpen(false);
@@ -146,7 +158,6 @@ export function NotesWorkspace(_props: { readonly username: string }) {
         entriesPanel={
           <EntriesPanel
             notes={entries}
-            onCreate={createEntry}
             onDelete={deleteEntry}
             onSelect={selectEntry}
             selectedNoteId={selectedForPanel}
@@ -156,6 +167,8 @@ export function NotesWorkspace(_props: { readonly username: string }) {
         note={selected}
         onChange={updateSelected}
         onToggleEntries={() => setIsEntriesOpen((v) => !v)}
+        onCreateEntry={createEntry}
+        showDevCreate
       />
     </section>
   );

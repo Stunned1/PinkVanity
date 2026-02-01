@@ -10,19 +10,40 @@ export function NoteEditor(props: {
   readonly entriesCount: number;
   readonly isEntriesOpen: boolean;
   readonly onToggleEntries: () => void;
+  readonly onCreateEntry?: () => void;
+  readonly showDevCreate?: boolean;
   readonly entriesPanel: ReactNode;
   readonly onChange: (next: { readonly body: string }) => void;
 }) {
   return (
     <section className="flex min-h-[70vh] flex-col">
-      <button
-        className="flex w-full items-center justify-between gap-3 border-b border-zinc-900 px-5 py-4 text-left hover:bg-zinc-900/10"
-        onClick={props.onToggleEntries}
-        type="button"
-      >
-        <div className="text-sm font-semibold tracking-tight text-zinc-100">Previous Entries</div>
-        <div className="text-sm text-zinc-400">{props.entriesCount}</div>
-      </button>
+      <div className="border-b border-zinc-900 px-5 py-4">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left hover:opacity-90"
+            onClick={props.onToggleEntries}
+            type="button"
+          >
+            <div className="truncate text-sm font-semibold tracking-tight text-zinc-100">
+              Previous Entries
+            </div>
+            <div className="shrink-0 text-sm text-zinc-400">{props.entriesCount}</div>
+          </button>
+
+          {props.showDevCreate && props.onCreateEntry ? (
+            <button
+              className="shrink-0 rounded-lg border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs text-zinc-200 hover:border-zinc-700"
+              onClick={(e) => {
+                e.stopPropagation();
+                props.onCreateEntry?.();
+              }}
+              type="button"
+            >
+              + New (dev)
+            </button>
+          ) : null}
+        </div>
+      </div>
 
       <div className="relative flex flex-1 flex-col">
         {props.note ? (
