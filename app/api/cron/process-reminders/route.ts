@@ -25,6 +25,7 @@ export async function GET(request: Request) {
     // We look for 'pending' items where 'remind_at' is in the past
     const now = new Date().toISOString();
     
+    
     const { data: reminders, error } = await supabase
       .from('reminders')
       .select('*')
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
         let toPhone = reminder.phone_number.trim();
         if (!toPhone.startsWith('+')) {
           // Remove dashes/spaces and add +1
-          toPhone = `+1${toPhone.replace(/\D/g, '')}`; 
+          toPhone = `+1${process.env.TWILIO_VIRTUAL_NUMBER}`; 
         }
         try {
           // Send via Twilio
