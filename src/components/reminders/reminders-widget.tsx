@@ -11,7 +11,12 @@ type ModalState =
   | { type: 'closed' }
   | { type: 'open' };
 
-export function RemindersWidget() {
+interface RemindersWidgetProps {
+  refreshKey: number;
+  onRefresh: () => void;
+}
+
+export function RemindersWidget({ refreshKey, onRefresh }: RemindersWidgetProps) {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,8 +34,12 @@ export function RemindersWidget() {
   // Fetch reminders
   useEffect(() => {
     async function fetchReminders() {
+      setLoading(true); // Set loading to true when fetching starts
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('reminders')
@@ -45,7 +54,7 @@ export function RemindersWidget() {
     }
 
     void fetchReminders();
-  }, [supabase]);
+  }, [supabase, refreshKey]); // Now depends on refreshKey
 
   // Create new reminder
   async function handleCreateReminder(e: React.FormEvent) {
@@ -57,7 +66,7 @@ export function RemindersWidget() {
 
     setSaving(true);
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } = {} } = await supabase.auth.getSession(); // Destructure with default value
     if (!session) {
       setSaving(false);
       return;
@@ -66,7 +75,7 @@ export function RemindersWidget() {
     // Combine date and time into ISO string
     const remindAt = new Date(`${remindDate}T${remindTime}:00`).toISOString();
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('reminders')
       .insert({
         user_id: session.user.id,
@@ -75,19 +84,19 @@ export function RemindersWidget() {
         remind_at: remindAt,
         status: 'pending',
         frequency: frequency
-      })
-      .select()
-      .single();
+      });
 
-    if (!error && data) {
-      setReminders(prev => [...prev, data].sort((a, b) => 
-        new Date(a.remind_at).getTime() - new Date(b.remind_at).getTime()
-      ));
+    if (!error) {
       setPhoneNumber('');
       setMessage('');
       setRemindDate('');
       setRemindTime('');
+      setFrequency(0); // Reset frequency to default
       setModal({ type: 'closed' });
+      onRefresh(); // Trigger a refresh of the reminder list
+    } else {
+        console.error("Error creating reminder:", error);
+        alert(`Failed to create reminder: ${error.message}`);
     }
 
     setSaving(false);
@@ -107,8 +116,7 @@ export function RemindersWidget() {
       alert(`Failed to delete reminder: ${error.message}`);
     } else {
       console.log('Successfully deleted reminder:', reminderId);
-      // Remove from UI
-      setReminders(prev => prev.filter(r => r.id !== reminderId));
+      onRefresh(); // Trigger a refresh of the reminder list
     }
 
     setDeletingId(null);
@@ -165,12 +173,11 @@ export function RemindersWidget() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-zinc-200 break-words">{reminder.message}</p>
-                    <p className="mt-1 text-xs text-zinc-500">{reminder.phone_number}</p>
+                    <p className="mt-1 text-xs text-zinc-500">Scheduled for: {formatDate(reminder.remind_at)}</p>
                   </div>
                   <div className="flex items-start gap-2 shrink-0">
                     <div className="flex flex-col items-end">
-                      <span className="text-xs text-zinc-400">{formatDate(reminder.remind_at)}</span>
-                      <span className="mt-1 text-xs text-zinc-500">{getFrequencyLabel(reminder.frequency)}</span>
+                      <span className="text-xs text-zinc-400">Frequency: {getFrequencyLabel(reminder.frequency)}</span>
                       {reminder.status && (
                         <span className={`mt-1 rounded px-1.5 py-0.5 text-xs ${
                           reminder.status === 'pending' 
