@@ -28,3 +28,35 @@ body {
   background-attachment: local;
 }
 
+/* Subtle, clean scrollbars (transparent track + white thumb) */
+.stylized-scrollbar {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.75) transparent; /* thumb | track */
+}
+
+.stylized-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.stylized-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.stylized-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  border: 3px solid transparent; /* creates padding without track color */
+  background-clip: content-box;
+}
+
+.stylized-scrollbar::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.stylized-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
