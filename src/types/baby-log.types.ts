@@ -2,7 +2,7 @@
 
 export type BabyLogKind = 'feeding' | 'diaper' | 'sleep';
 
-export type FeedingType = 'breast' | 'bottle';
+export type FeedingType = 'breast' | 'bottle' | 'breast_pumped';
 
 export type DiaperType = 'wet' | 'dirty' | 'both';
 
@@ -16,6 +16,7 @@ export interface BabyLogEntry {
   feeding_type?: FeedingType | null;
   feeding_duration_minutes?: number | null;
   feeding_amount_ml?: number | null;
+  feeding_amount_unit?: 'ml' | 'oz' | null;
   
   // Diaper fields
   diaper_type?: DiaperType | null;

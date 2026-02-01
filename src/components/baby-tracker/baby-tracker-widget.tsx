@@ -23,9 +23,10 @@ export function BabyTrackerWidget() {
   const activeSleep = logs.find((l) => l.kind === 'sleep' && l.sleep_start && !l.sleep_end) ?? null;
 
   // Feeding form state
-  const [feedingType, setFeedingType] = useState<'breast' | 'bottle' | null>(null);
+  const [feedingType, setFeedingType] = useState<'breast' | 'bottle' | 'breast_pumped' | null>(null);
   const [feedingDuration, setFeedingDuration] = useState('');
   const [feedingAmount, setFeedingAmount] = useState('');
+  const [feedingUnit, setFeedingUnit] = useState<'ml' | 'oz'>('ml'); // Default to ml
 
   // Fetch logs
   useEffect(() => {
@@ -64,6 +65,14 @@ export function BabyTrackerWidget() {
     const session = await getSession();
     if (!session) { setSaving(false); return; }
 
+    let amountMl: number | null = null;
+    if ((feedingType === 'bottle' || feedingType === 'breast_pumped') && feedingAmount) {
+      amountMl = Number(feedingAmount);
+      if (feedingUnit === 'oz') {
+        amountMl = amountMl * 29.5735; // Convert oz to ml
+      }
+    }
+
     const { data, error } = await supabase
       .from('baby_logs')
       .insert({
@@ -71,8 +80,9 @@ export function BabyTrackerWidget() {
         kind: 'feeding',
         logged_at: new Date().toISOString(),
         feeding_type: feedingType,
-        feeding_duration_minutes: feedingDuration ? Number(feedingDuration) : null,
-        feeding_amount_ml: feedingType === 'bottle' && feedingAmount ? Number(feedingAmount) : null,
+        feeding_duration_minutes: feedingType === 'breast' && feedingDuration ? Number(feedingDuration) : null,
+        feeding_amount_ml: amountMl,
+        feeding_amount_unit: feedingUnit,
       })
       .select()
       .single();
@@ -213,9 +223,9 @@ export function BabyTrackerWidget() {
     switch (log.kind) {
       case 'feeding':
         return [
-          log.feeding_type === 'breast' ? 'Breast' : log.feeding_type === 'bottle' ? 'Bottle' : null,
+          log.feeding_type === 'breast' ? 'Breast' : log.feeding_type === 'bottle' ? 'Bottle' : log.feeding_type === 'breast_pumped' ? 'Breast (pumped)' : null,
           log.feeding_duration_minutes ? `${log.feeding_duration_minutes} min` : null,
-          log.feeding_amount_ml ? `${log.feeding_amount_ml} ml` : null,
+          log.feeding_amount_ml ? `${log.feeding_amount_ml} ${log.feeding_amount_unit || 'ml'}` : null,
         ]
           .filter(Boolean)
           .join(' · ') || 'Feeding logged';
@@ -227,10 +237,15 @@ export function BabyTrackerWidget() {
 
       case 'sleep': {
         if (log.sleep_start && log.sleep_end) {
-          const mins = Math.round(
-            (new Date(log.sleep_end).getTime() - new Date(log.sleep_start).getTime()) / 60000
-          );
-          return `${mins} min`;
+          const start = new Date(log.sleep_start);
+          const end = new Date(log.sleep_end);
+          const mins = Math.round((end.getTime() - start.getTime()) / 60000);
+
+          const formatTime = (date: Date) => {
+            return date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+          };
+
+          return `${formatTime(start)} to ${formatTime(end)} (${mins} min)`;
         }
         if (log.sleep_start && !log.sleep_end) return 'In progress…';
         return 'Sleep logged';
@@ -363,6 +378,17 @@ export function BabyTrackerWidget() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setFeedingType('breast_pumped')}
+                    className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+                      feedingType === 'breast_pumped'
+                        ? 'border-blue-600 bg-blue-900/40 text-blue-200'
+                        : 'border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800'
+                    }`}
+                  >
+                    Breast (pumped)
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setFeedingType('bottle')}
                     className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
                       feedingType === 'bottle'
@@ -375,7 +401,7 @@ export function BabyTrackerWidget() {
                 </div>
               </div>
 
-              {/* Duration — shown for breast, hidden for bottle */}
+              {/* Duration — shown for breast only */}
               {feedingType === 'breast' && (
                 <div>
                   <label htmlFor="duration" className="mb-1.5 block text-sm font-medium text-zinc-300">
@@ -393,21 +419,47 @@ export function BabyTrackerWidget() {
                 </div>
               )}
 
-              {/* Amount — only shown for bottle */}
-              {feedingType === 'bottle' && (
+              {/* Amount — only shown for bottle or breast (pumped) */}
+              {(feedingType === 'bottle' || feedingType === 'breast_pumped') && (
                 <div>
                   <label htmlFor="amount" className="mb-1.5 block text-sm font-medium text-zinc-300">
-                    Amount (ml)
+                    Amount
                   </label>
-                  <input
-                    id="amount"
-                    type="number"
-                    min="1"
-                    value={feedingAmount}
-                    onChange={(e) => setFeedingAmount(e.target.value)}
-                    placeholder="e.g. 120"
-                    className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600"
-                  />
+                  <div className="flex rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden">
+                    <input
+                      id="amount"
+                      type="number"
+                      min="1"
+                      value={feedingAmount}
+                      onChange={(e) => setFeedingAmount(e.target.value)}
+                      placeholder="e.g. 120"
+                      className="flex-1 bg-transparent px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none"
+                    />
+                    <div className="flex border-l border-zinc-800">
+                      <button
+                        type="button"
+                        onClick={() => setFeedingUnit('ml')}
+                        className={`px-3 py-2 text-sm font-medium ${
+                          feedingUnit === 'ml'
+                            ? 'bg-zinc-700 text-zinc-100'
+                            : 'text-zinc-400 hover:bg-zinc-800'
+                        }`}
+                      >
+                        ml
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFeedingUnit('oz')}
+                        className={`px-3 py-2 text-sm font-medium ${
+                          feedingUnit === 'oz'
+                            ? 'bg-zinc-700 text-zinc-100'
+                            : 'text-zinc-400 hover:bg-zinc-800'
+                        }`}
+                      >
+                        oz
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 
