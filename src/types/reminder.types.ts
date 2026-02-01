@@ -6,4 +6,5 @@ export type Reminder = {
   readonly remind_at: string;
   readonly status: string | null;
   readonly created_at: string | null;
+  readonly frequency: number;
 };

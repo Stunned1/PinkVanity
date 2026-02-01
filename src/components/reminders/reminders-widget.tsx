@@ -24,6 +24,7 @@ export function RemindersWidget() {
   const [message, setMessage] = useState('');
   const [remindDate, setRemindDate] = useState('');
   const [remindTime, setRemindTime] = useState('');
+  const [frequency, setFrequency] = useState<number>(0);
 
   // Fetch reminders
   useEffect(() => {
@@ -72,7 +73,8 @@ export function RemindersWidget() {
         phone_number: phoneNumber,
         message: message,
         remind_at: remindAt,
-        status: 'pending'
+        status: 'pending',
+        frequency: frequency
       })
       .select()
       .single();
@@ -123,6 +125,19 @@ export function RemindersWidget() {
     });
   }
 
+  function getFrequencyLabel(frequency: number) {
+    switch (frequency) {
+      case 0:
+        return 'Once';
+      case 1:
+        return 'Daily';
+      case 7:
+        return 'Weekly';
+      default:
+        return 'Unknown';
+    }
+  }
+
   return (
     <>
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 shadow-lg">
@@ -155,6 +170,7 @@ export function RemindersWidget() {
                   <div className="flex items-start gap-2 shrink-0">
                     <div className="flex flex-col items-end">
                       <span className="text-xs text-zinc-400">{formatDate(reminder.remind_at)}</span>
+                      <span className="mt-1 text-xs text-zinc-500">{getFrequencyLabel(reminder.frequency)}</span>
                       {reminder.status && (
                         <span className={`mt-1 rounded px-1.5 py-0.5 text-xs ${
                           reminder.status === 'pending' 
@@ -237,6 +253,22 @@ export function RemindersWidget() {
                   rows={3}
                   className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 resize-none"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="frequency" className="mb-1.5 block text-sm font-medium text-zinc-300">
+                  Frequency
+                </label>
+                <select
+                  id="frequency"
+                  value={frequency}
+                  onChange={(e) => setFrequency(Number(e.target.value))}
+                  className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                >
+                  <option value={0}>Once</option>
+                  <option value={1}>Daily</option>
+                  <option value={7}>Weekly</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3 relative">
