@@ -9,7 +9,7 @@ export function ReminderPoller({ onRefresh }: ReminderPollerProps) {
   useEffect(() => {
     // The "Mailman" routine
     const checkMail = async () => {
-      console.log('👀 Checking for due reminders...');
+      console.log('👀 Checking for due reminders (and refreshing UI)...');
       await fetch('/api/cron/process-reminders/');
       onRefresh(); // Trigger refresh after the cron job is called
     };
