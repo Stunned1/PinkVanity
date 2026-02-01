@@ -2,7 +2,7 @@
 
 export type BabyLogKind = 'feeding' | 'diaper' | 'sleep';
 
-export type FeedingType = 'breast' | 'bottle' | 'breast_pumped';
+export type FeedingType = 'breast' | 'formula' | 'breast_pumped';
 
 export type DiaperType = 'wet' | 'dirty' | 'both';
 

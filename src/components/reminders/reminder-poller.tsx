@@ -2,16 +2,15 @@
 import { useEffect } from 'react';
 
 interface ReminderPollerProps {
-  onRefresh: () => void;
+  readonly onRefresh?: () => void;
 }
 
 export function ReminderPoller({ onRefresh }: ReminderPollerProps) {
   useEffect(() => {
     // The "Mailman" routine
     const checkMail = async () => {
-      console.log('👀 Checking for due reminders (and refreshing UI)...');
       await fetch('/api/cron/process-reminders/');
-      onRefresh(); // Trigger refresh after the cron job is called
+      onRefresh?.(); // Trigger refresh after the cron job is called
     };
 
     // Check immediately, then every 60 seconds
@@ -19,7 +18,7 @@ export function ReminderPoller({ onRefresh }: ReminderPollerProps) {
     const interval = setInterval(checkMail, 60000);
 
     return () => clearInterval(interval);
-  }, [onRefresh]); // Add onRefresh to dependencies
+  }, [onRefresh]);
 
   return null; // It renders nothing (invisible)
 }

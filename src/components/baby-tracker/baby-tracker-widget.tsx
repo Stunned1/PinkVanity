@@ -195,7 +195,9 @@ export function BabyTrackerWidget() {
       setLogs((prev) => [data, ...prev].sort((a, b) => 
         new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime()
       ));
-      setDiaperTime('');
+      setDiaperTimeHour('');
+      setDiaperTimeMinute('');
+      setDiaperTimePeriod('AM');
     } else if (error) {
       console.error('Error logging diaper:', error);
       alert('Failed to log diaper change: ' + error.message);

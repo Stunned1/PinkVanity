@@ -50,6 +50,15 @@ body {
   box-shadow: 0 0 12px rgba(255, 236, 200, 0.35);
 }
 
+.cursor-over-clickable .cursor-dot {
+  background: transparent;
+  box-shadow: none;
+  width: 6px;
+  height: 6px;
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 1px;
+}
+
 .custom-dot-cursor,
 .custom-dot-cursor * {
   cursor: none !important;

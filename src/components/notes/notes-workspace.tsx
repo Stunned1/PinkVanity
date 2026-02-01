@@ -15,6 +15,9 @@ import {
   updateJournalEntry
 } from '@/utils/journal/supabase-journal';
 
+const LAST_VENT_SUBMIT_AT_KEY = 'wf_last_vent_submit_at';
+const LAST_VENT_ENTRY_ID_KEY = 'wf_last_vent_entry_id';
+
 function getTodayIsoDate(): string {
   // YYYY-MM-DD (local time is fine for hackathon; switch to timezone-aware logic later)
   const now = new Date();
@@ -189,6 +192,14 @@ export function NotesWorkspace(_props: { readonly username: string }) {
       if (!id) return;
       // Use the latest body we just applied (this timer gets reset on every keystroke).
       await updateJournalEntry({ id, body: updated.body });
+      if (updated.ventEntry) {
+        try {
+          localStorage.setItem(LAST_VENT_SUBMIT_AT_KEY, String(Date.now()));
+          localStorage.setItem(LAST_VENT_ENTRY_ID_KEY, String(updated.id));
+        } catch {
+          // ignore
+        }
+      }
     }, 500);
   }
 
@@ -212,6 +223,14 @@ export function NotesWorkspace(_props: { readonly username: string }) {
       const answers = pendingAnswersRef.current;
       if (!id || !answers) return;
       await updateJournalEntryAnswers({ id, p1Answer: answers.p1Answer, p2Answer: answers.p2Answer });
+      if (updated.ventEntry) {
+        try {
+          localStorage.setItem(LAST_VENT_SUBMIT_AT_KEY, String(Date.now()));
+          localStorage.setItem(LAST_VENT_ENTRY_ID_KEY, String(updated.id));
+        } catch {
+          // ignore
+        }
+      }
     }, 500);
   }
 
@@ -229,6 +248,21 @@ export function NotesWorkspace(_props: { readonly username: string }) {
       const ventEntry = pendingVentRef.current;
       if (!id || ventEntry == null) return;
       await updateJournalEntryVenting({ id, ventEntry });
+      if (ventEntry) {
+        try {
+          localStorage.setItem(LAST_VENT_SUBMIT_AT_KEY, String(Date.now()));
+          localStorage.setItem(LAST_VENT_ENTRY_ID_KEY, String(id));
+        } catch {
+          // ignore
+        }
+      } else {
+        try {
+          localStorage.removeItem(LAST_VENT_SUBMIT_AT_KEY);
+          localStorage.removeItem(LAST_VENT_ENTRY_ID_KEY);
+        } catch {
+          // ignore
+        }
+      }
     }, 250);
   }
 

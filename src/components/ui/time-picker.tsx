@@ -10,11 +10,11 @@ type TimePickerProps = {
 
 export function TimePicker({ value, onChange }: TimePickerProps) {
   // Parse initial value
-  const parseValue = (val: string) => {
-    if (!val) return { hour: '', minute: '', period: 'AM' as 'AM' | 'PM' };
+  const parseValue = (val: string): { readonly hour: string; readonly minute: string; readonly period: 'AM' | 'PM' } => {
+    if (!val) return { hour: '', minute: '', period: 'AM' };
     const [hourStr, minuteStr] = val.split(':');
     const hour24 = parseInt(hourStr, 10);
-    const period = hour24 >= 12 ? 'PM' : 'AM';
+    const period: 'AM' | 'PM' = hour24 >= 12 ? 'PM' : 'AM';
     const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
     return {
       hour: String(hour12).padStart(2, '0'),
@@ -152,7 +152,7 @@ export function TimePicker({ value, onChange }: TimePickerProps) {
     }
   }
 
-  function handleMinuteKeyDown(e: React.KeyboardEvent) {
+  function handleMinuteKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       const num = parseInt(minute || '0', 10);

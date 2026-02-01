@@ -26,6 +26,9 @@ export function CursorGlow() {
     setEnabled(true);
     document.body.classList.add('custom-dot-cursor');
 
+    const clickableSelector =
+      'a,button,[role="button"],input,textarea,select,summary,label,[data-clickable="true"]';
+
     function onMove(e: MouseEvent) {
       setVisible(true);
       targetRef.current = { x: e.clientX, y: e.clientY };
@@ -38,8 +41,27 @@ export function CursorGlow() {
       if (rafRef.current == null) rafRef.current = window.requestAnimationFrame(tick);
     }
 
+    function setHoverClickable(next: boolean) {
+      document.body.classList.toggle('cursor-over-clickable', next);
+    }
+
+    function isClickableElement(el: Element | null): boolean {
+      if (!el) return false;
+      return Boolean(el.closest(clickableSelector));
+    }
+
+    function onMouseOver(e: MouseEvent) {
+      setHoverClickable(isClickableElement(e.target as Element | null));
+    }
+
+    function onMouseOut(e: MouseEvent) {
+      const related = e.relatedTarget as Element | null;
+      setHoverClickable(isClickableElement(related));
+    }
+
     function onLeave() {
       setVisible(false);
+      setHoverClickable(false);
     }
 
     function tick() {
@@ -69,14 +91,19 @@ export function CursorGlow() {
     }
 
     window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('mouseover', onMouseOver, true);
+    window.addEventListener('mouseout', onMouseOut, true);
     window.addEventListener('mouseleave', onLeave);
     return () => {
       window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseover', onMouseOver, true);
+      window.removeEventListener('mouseout', onMouseOut, true);
       window.removeEventListener('mouseleave', onLeave);
       if (rafRef.current != null) window.cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
       targetRef.current = null;
       currentRef.current = null;
+      document.body.classList.remove('cursor-over-clickable');
       document.body.classList.remove('custom-dot-cursor');
     };
   }, []);
