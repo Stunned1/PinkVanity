@@ -1,7 +1,11 @@
 export type JournalEntry = {
   readonly id: string;
-  readonly entryDate: string; // hackathon: store as display string for now
+  readonly entryDate: string; // ISO date string YYYY-MM-DD
   readonly body: string;
   readonly updatedAt: string; // ISO string
+  readonly prompt1: string;
+  readonly prompt2: string;
+  readonly p1Answer: string;
+  readonly p2Answer: string;
 };
 

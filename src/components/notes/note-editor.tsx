@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 
 import type { JournalEntry } from '@/types/journal-entry.types';
+import { PromptsDrawer } from '@/components/notes/prompts-drawer';
 
 export function NoteEditor(props: {
   readonly note: JournalEntry | null;
@@ -14,6 +15,7 @@ export function NoteEditor(props: {
   readonly showDevCreate?: boolean;
   readonly entriesPanel: ReactNode;
   readonly onChange: (next: { readonly body: string }) => void;
+  readonly onChangeAnswers: (next: { readonly p1Answer: string; readonly p2Answer: string }) => void;
 }) {
   return (
     <section className="flex min-h-[70vh] flex-col">
@@ -61,6 +63,13 @@ export function NoteEditor(props: {
             </div>
           </div>
         )}
+
+        <PromptsDrawer
+          onChangeAnswers={props.onChangeAnswers}
+          p1Answer={props.note?.p1Answer ?? ''}
+          p2Answer={props.note?.p2Answer ?? ''}
+          prompts={props.note ? [props.note.prompt1, props.note.prompt2] : []}
+        />
 
         <div
           className={[

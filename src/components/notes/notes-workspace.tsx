@@ -9,13 +9,43 @@ import {
   createJournalEntry,
   deleteJournalEntry,
   listJournalEntries,
+  setJournalEntryPrompts,
+  updateJournalEntryAnswers,
   updateJournalEntry
 } from '@/utils/journal/supabase-journal';
 
-// HACKATHON NOTE:
-// Store entry dates as ISO strings so sorting works lexicographically (YYYY-MM-DD).
-// Later you can format for display and/or change the DB column to a real `date` type.
-const HARD_CODED_ENTRY_DATE = '2026-01-31';
+function getTodayIsoDate(): string {
+  // YYYY-MM-DD (local time is fine for hackathon; switch to timezone-aware logic later)
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function addDaysIsoDate(isoDate: string, days: number): string {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const dt = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+  dt.setDate(dt.getDate() + days);
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+function getNextUnusedEntryDate(existing: readonly JournalEntry[]): string {
+  const today = getTodayIsoDate();
+  const used = new Set(existing.map((e) => e.entryDate));
+
+  // Prefer today if missing, otherwise tomorrow, then keep going.
+  for (let offset = 0; offset < 366; offset++) {
+    const candidate = addDaysIsoDate(today, offset);
+    if (!used.has(candidate)) return candidate;
+  }
+
+  // Fallback: should never happen for hackathon usage.
+  return addDaysIsoDate(today, 1);
+}
 
 function sortEntries(entries: readonly JournalEntry[]): JournalEntry[] {
   return entries
@@ -49,7 +79,11 @@ export function NotesWorkspace(_props: { readonly username: string }) {
 
   const saveTimerRef = useRef<number | null>(null);
   const pendingSaveIdRef = useRef<string | null>(null);
-  const ensuredInitialRef = useRef(false);
+  const pendingAnswersRef = useRef<{ readonly p1Answer: string; readonly p2Answer: string } | null>(
+    null
+  );
+  const ensuredTodayRef = useRef(false);
+  const backfilledRef = useRef(false);
 
   const selected = selectedId ? entries.find((n) => n.id === selectedId) ?? null : null;
 
@@ -83,17 +117,47 @@ export function NotesWorkspace(_props: { readonly username: string }) {
 
   useEffect(() => {
     if (status.type !== 'ready') return;
-    if (ensuredInitialRef.current) return;
-    if (entries.length > 0) return;
+    if (backfilledRef.current) return;
 
-    ensuredInitialRef.current = true;
-    void createEntry();
+    const missing = entries.filter((e) => !e.prompt1 || !e.prompt2);
+    if (missing.length === 0) {
+      backfilledRef.current = true;
+      return;
+    }
+
+    backfilledRef.current = true;
+    void (async () => {
+      for (const entry of missing) {
+        const res = await setJournalEntryPrompts({ id: entry.id, entryDate: entry.entryDate });
+        if (!res.ok) continue;
+        setEntries((prev) =>
+          prev.map((e) =>
+            e.id === entry.id ? { ...e, prompt1: res.value.prompt1, prompt2: res.value.prompt2 } : e
+          )
+        );
+      }
+    })();
+  }, [entries, status.type]);
+
+  useEffect(() => {
+    if (status.type !== 'ready') return;
+    if (ensuredTodayRef.current) return;
+
+    const today = getTodayIsoDate();
+    const hasToday = entries.some((e) => e.entryDate === today);
+    if (hasToday) {
+      ensuredTodayRef.current = true;
+      return;
+    }
+
+    ensuredTodayRef.current = true;
+    void createEntry(today);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status.type, entries.length]);
 
-  async function createEntry() {
+  async function createEntry(entryDate: string = getTodayIsoDate()) {
     setIsEntriesOpen(false);
-    const res = await createJournalEntry({ entryDate: HARD_CODED_ENTRY_DATE });
+    const res = await createJournalEntry({ entryDate });
     if (!res.ok) {
       setStatus({ type: 'error', message: res.error.message });
       return;
@@ -102,6 +166,12 @@ export function NotesWorkspace(_props: { readonly username: string }) {
     setEntries((prev) => sortEntries([res.value, ...prev]));
     setSelectedId(res.value.id);
     setStatus({ type: 'ready' });
+  }
+
+  async function createDevEntry() {
+    // DEV ONLY: create an entry for the next unused date so prompts change “day to day”.
+    const nextDate = getNextUnusedEntryDate(entries);
+    await createEntry(nextDate);
   }
 
   async function deleteEntry(entryId: string) {
@@ -139,6 +209,29 @@ export function NotesWorkspace(_props: { readonly username: string }) {
     }, 500);
   }
 
+  function updateAnswers(next: { readonly p1Answer: string; readonly p2Answer: string }) {
+    if (!selected) return;
+    const updated: JournalEntry = {
+      ...selected,
+      p1Answer: next.p1Answer,
+      p2Answer: next.p2Answer,
+      updatedAt: new Date().toISOString()
+    };
+
+    setEntries((prev) => upsertEntry(prev, updated));
+
+    // Debounced save answers (separate from journal body).
+    pendingSaveIdRef.current = updated.id;
+    pendingAnswersRef.current = { p1Answer: updated.p1Answer, p2Answer: updated.p2Answer };
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(async () => {
+      const id = pendingSaveIdRef.current;
+      const answers = pendingAnswersRef.current;
+      if (!id || !answers) return;
+      await updateJournalEntryAnswers({ id, p1Answer: answers.p1Answer, p2Answer: answers.p2Answer });
+    }, 500);
+  }
+
   function selectEntry(entryId: string) {
     setSelectedId(entryId);
     setIsEntriesOpen(false);
@@ -166,8 +259,9 @@ export function NotesWorkspace(_props: { readonly username: string }) {
         isEntriesOpen={isEntriesOpen}
         note={selected}
         onChange={updateSelected}
+        onChangeAnswers={updateAnswers}
         onToggleEntries={() => setIsEntriesOpen((v) => !v)}
-        onCreateEntry={createEntry}
+        onCreateEntry={createDevEntry}
         showDevCreate
       />
     </section>
