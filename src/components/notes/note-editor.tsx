@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 
 import type { JournalEntry } from '@/types/journal-entry.types';
 import { PromptsDrawer } from '@/components/notes/prompts-drawer';
+import { VentingRibbon } from '@/components/notes/venting-ribbon';
+import { VentingHintOverlay } from '@/components/notes/venting-hint-overlay';
 
 export function NoteEditor(props: {
   readonly note: JournalEntry | null;
@@ -11,11 +13,10 @@ export function NoteEditor(props: {
   readonly entriesCount: number;
   readonly isEntriesOpen: boolean;
   readonly onToggleEntries: () => void;
-  readonly onCreateEntry?: () => void;
-  readonly showDevCreate?: boolean;
   readonly entriesPanel: ReactNode;
   readonly onChange: (next: { readonly body: string }) => void;
   readonly onChangeAnswers: (next: { readonly p1Answer: string; readonly p2Answer: string }) => void;
+  readonly onToggleVenting: () => void;
 }) {
   return (
     <section className="flex min-h-[70vh] flex-col">
@@ -32,18 +33,15 @@ export function NoteEditor(props: {
             <div className="shrink-0 text-sm text-zinc-400">{props.entriesCount}</div>
           </button>
 
-          {props.showDevCreate && props.onCreateEntry ? (
-            <button
-              className="shrink-0 rounded-lg border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs text-zinc-200 hover:border-zinc-700"
-              onClick={(e) => {
-                e.stopPropagation();
-                props.onCreateEntry?.();
-              }}
-              type="button"
-            >
-              + New (dev)
-            </button>
-          ) : null}
+          <div className="relative flex items-center gap-2">
+            {props.note ? (
+              <VentingRibbon
+                active={props.note.ventEntry}
+                className="-my-3 translate-y-8 z-10"
+                onToggle={props.onToggleVenting}
+              />
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -70,6 +68,9 @@ export function NoteEditor(props: {
           p2Answer={props.note?.p2Answer ?? ''}
           prompts={props.note ? [props.note.prompt1, props.note.prompt2] : []}
         />
+
+        {/* Page-level overlay hint that points to the ribbon */}
+        {props.note ? <VentingHintOverlay targetSelector="[data-venting-ribbon]" /> : null}
 
         <div
           className={[

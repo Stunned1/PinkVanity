@@ -10,6 +10,7 @@ type DbJournalRow = {
   readonly entry_date: string;
   readonly body: string;
   readonly updated_at: string;
+  readonly vent_entry?: boolean | null;
   readonly prompt_1: string | null;
   readonly prompt_2: string | null;
   readonly p1_answer: string | null;
@@ -24,6 +25,7 @@ function mapRow(row: DbJournalRow): JournalEntry {
     entryDate: row.entry_date,
     body: row.body,
     updatedAt: row.updated_at,
+    ventEntry: row.vent_entry ?? false,
     prompt1: row.prompt_1 ?? '',
     prompt2: row.prompt_2 ?? '',
     p1Answer: row.p1_answer ?? '',
@@ -54,7 +56,9 @@ export async function listJournalEntries(): Promise<Result<readonly JournalEntry
 
     const { data, error } = await supabase
       .from('journal_entries')
-      .select('id,user_id,entry_date,body,updated_at,prompt_1,prompt_2,p1_answer,p2_answer')
+      .select(
+        'id,user_id,entry_date,body,updated_at,vent_entry,prompt_1,prompt_2,p1_answer,p2_answer'
+      )
       // Sort by entry_date first (your "journal date"), then by updated_at for ties.
       .order('entry_date', { ascending: false })
       .order('updated_at', { ascending: false });
@@ -84,13 +88,16 @@ export async function createJournalEntry(input: {
         user_id: userData.user.id,
         entry_date: input.entryDate,
         body: '',
+        vent_entry: false,
         prompt_1: prompts.prompt1,
         prompt_2: prompts.prompt2,
         p1_answer: '',
         p2_answer: '',
         updated_at: now
       })
-      .select('id,user_id,entry_date,body,updated_at,prompt_1,prompt_2,p1_answer,p2_answer')
+      .select(
+        'id,user_id,entry_date,body,updated_at,vent_entry,prompt_1,prompt_2,p1_answer,p2_answer'
+      )
       .single();
 
     if (error) return err({ message: error.message });
@@ -172,6 +179,30 @@ export async function updateJournalEntry(input: {
   } catch (e) {
     logger.error('Unexpected updateJournalEntry error', e);
     return err({ message: 'Failed to save entry.' });
+  }
+}
+
+export async function updateJournalEntryVenting(input: {
+  readonly id: string;
+  readonly ventEntry: boolean;
+}): Promise<Result<void, JournalFailure>> {
+  try {
+    const supabase = getSupabaseBrowserClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) return err({ message: userError.message });
+    if (!userData.user) return err({ message: 'Not signed in.' });
+
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('journal_entries')
+      .update({ vent_entry: input.ventEntry, updated_at: now })
+      .eq('id', input.id);
+
+    if (error) return err({ message: error.message });
+    return ok(undefined);
+  } catch (e) {
+    logger.error('Unexpected updateJournalEntryVenting error', e);
+    return err({ message: 'Failed to update venting status.' });
   }
 }
 

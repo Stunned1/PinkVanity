@@ -11,6 +11,7 @@ import {
   listJournalEntries,
   setJournalEntryPrompts,
   updateJournalEntryAnswers,
+  updateJournalEntryVenting,
   updateJournalEntry
 } from '@/utils/journal/supabase-journal';
 
@@ -31,20 +32,6 @@ function addDaysIsoDate(isoDate: string, days: number): string {
   const mm = String(dt.getMonth() + 1).padStart(2, '0');
   const dd = String(dt.getDate()).padStart(2, '0');
   return `${yy}-${mm}-${dd}`;
-}
-
-function getNextUnusedEntryDate(existing: readonly JournalEntry[]): string {
-  const today = getTodayIsoDate();
-  const used = new Set(existing.map((e) => e.entryDate));
-
-  // Prefer today if missing, otherwise tomorrow, then keep going.
-  for (let offset = 0; offset < 366; offset++) {
-    const candidate = addDaysIsoDate(today, offset);
-    if (!used.has(candidate)) return candidate;
-  }
-
-  // Fallback: should never happen for hackathon usage.
-  return addDaysIsoDate(today, 1);
 }
 
 function sortEntries(entries: readonly JournalEntry[]): JournalEntry[] {
@@ -82,6 +69,8 @@ export function NotesWorkspace(_props: { readonly username: string }) {
   const pendingAnswersRef = useRef<{ readonly p1Answer: string; readonly p2Answer: string } | null>(
     null
   );
+  const ventTimerRef = useRef<number | null>(null);
+  const pendingVentRef = useRef<boolean | null>(null);
   const ensuredTodayRef = useRef(false);
   const backfilledRef = useRef(false);
 
@@ -168,12 +157,6 @@ export function NotesWorkspace(_props: { readonly username: string }) {
     setStatus({ type: 'ready' });
   }
 
-  async function createDevEntry() {
-    // DEV ONLY: create an entry for the next unused date so prompts change “day to day”.
-    const nextDate = getNextUnusedEntryDate(entries);
-    await createEntry(nextDate);
-  }
-
   async function deleteEntry(entryId: string) {
     const res = await deleteJournalEntry({ id: entryId });
     if (!res.ok) {
@@ -232,6 +215,23 @@ export function NotesWorkspace(_props: { readonly username: string }) {
     }, 500);
   }
 
+  function toggleVenting() {
+    if (!selected) return;
+    const next = !selected.ventEntry;
+    const updated: JournalEntry = { ...selected, ventEntry: next, updatedAt: new Date().toISOString() };
+    setEntries((prev) => upsertEntry(prev, updated));
+
+    pendingSaveIdRef.current = updated.id;
+    pendingVentRef.current = next;
+    if (ventTimerRef.current) window.clearTimeout(ventTimerRef.current);
+    ventTimerRef.current = window.setTimeout(async () => {
+      const id = pendingSaveIdRef.current;
+      const ventEntry = pendingVentRef.current;
+      if (!id || ventEntry == null) return;
+      await updateJournalEntryVenting({ id, ventEntry });
+    }, 250);
+  }
+
   function selectEntry(entryId: string) {
     setSelectedId(entryId);
     setIsEntriesOpen(false);
@@ -261,8 +261,7 @@ export function NotesWorkspace(_props: { readonly username: string }) {
         onChange={updateSelected}
         onChangeAnswers={updateAnswers}
         onToggleEntries={() => setIsEntriesOpen((v) => !v)}
-        onCreateEntry={createDevEntry}
-        showDevCreate
+        onToggleVenting={toggleVenting}
       />
     </section>
   );

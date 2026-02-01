@@ -55,6 +55,15 @@ body {
   cursor: none !important;
 }
 
+.venting-ribbon__icon {
+  transition: transform 180ms ease-out;
+}
+
+.venting-ribbon:hover .venting-ribbon__icon,
+.venting-ribbon:focus-visible .venting-ribbon__icon {
+  transform: translateY(-6px);
+}
+
 .lined-paper {
   /* Lined-paper look for the hackathon notes editor */
   /* Bigger gap between lines */

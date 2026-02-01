@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { SignOutButton } from '@/components/auth/sign-out-button';
+import { ListenOnlyToggle } from '@/components/settings/listen-only-toggle';
 
 export function Topbar() {
   return (
@@ -14,6 +15,7 @@ export function Topbar() {
         </div>
 
         <div className="flex items-center gap-3">
+          <ListenOnlyToggle />
           <SignOutButton />
         </div>
       </div>

@@ -42,7 +42,10 @@ export function EntriesPanel(props: {
             tabIndex={0}
           >
             <div className="flex items-center justify-between gap-3 px-5 py-3">
-              <div className="text-sm font-medium text-zinc-100">{formatEntryDate(note.entryDate)}</div>
+              <div className="flex items-center gap-2 text-sm font-medium text-zinc-100">
+                {note.ventEntry ? <span className="h-2 w-2 rounded-full bg-red-500" /> : null}
+                <span>{formatEntryDate(note.entryDate)}</span>
+              </div>
 
               <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                 <button
