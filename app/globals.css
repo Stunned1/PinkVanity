@@ -7,6 +7,52 @@ body {
   height: 100%;
 }
 
+:root {
+  --cursor-x: 50vw;
+  --cursor-y: 50vh;
+}
+
+.cursor-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.9;
+
+  /* “Dim candle” vibe: warm core + soft falloff */
+  background:
+    radial-gradient(
+      130px circle at var(--cursor-x) var(--cursor-y),
+      rgba(255, 236, 200, 0.14),
+      rgba(255, 236, 200, 0.08) 40%,
+      rgba(9, 9, 11, 0) 72%
+    ),
+    radial-gradient(
+      260px circle at var(--cursor-x) var(--cursor-y),
+      rgba(255, 190, 140, 0.06),
+      rgba(9, 9, 11, 0) 70%
+    );
+}
+
+.cursor-dot {
+  position: fixed;
+  left: var(--cursor-x);
+  top: var(--cursor-y);
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 6;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 12px rgba(255, 236, 200, 0.35);
+}
+
+.custom-dot-cursor,
+.custom-dot-cursor * {
+  cursor: none !important;
+}
+
 .lined-paper {
   /* Lined-paper look for the hackathon notes editor */
   /* Bigger gap between lines */
