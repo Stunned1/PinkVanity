@@ -12,7 +12,8 @@ type NavItem = {
 
 const NAV_ITEMS: readonly NavItem[] = [
   { href: '/dashboard', label: 'Journal', description: 'Writing surface', match: 'exact' },
-  { href: '/dashboard/reminders', label: 'Reminders', description: 'Quick widget', match: 'startsWith' }
+  { href: '/dashboard/reminders', label: 'Reminders', description: 'Quick widget', match: 'startsWith' },
+  { href: '/dashboard/baby', label: 'Baby Tracker', description: 'Feeding, sleep & more', match: 'startsWith' }
 ];
 
 function isActive(pathname: string, item: NavItem): boolean {
