@@ -1,30 +1,24 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import twilio from 'twilio';
+import nodemailer from 'nodemailer';
 
-// 1. Init Supabase Admin Client (Bypasses RLS)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// 2. Init Twilio Client
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+// Configure the Email Transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail', // Or use host/port for other providers
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD, // Use an "App Password" for Gmail
+  },
+});
 
 export async function GET(request: Request) {
-  // Optional: Add a secret header check here to prevent public access
-  // if (request.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-  //   return new NextResponse('Unauthorized', { status: 401 });
-  // }
-
   try {
-    // 3. Find due reminders
-    // We look for 'pending' items where 'remind_at' is in the past
     const now = new Date().toISOString();
-    
     
     const { data: reminders, error } = await supabase
       .from('reminders')
@@ -37,25 +31,22 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: 'No reminders to send' });
     }
 
-    // 4. Send texts and update DB
     const results = await Promise.all(
       reminders.map(async (reminder) => {
-
-
-        let toPhone = reminder.phone_number.trim();
-        if (!toPhone.startsWith('+')) {
-          // Remove dashes/spaces and add +1
-          toPhone = `+1${process.env.TWILIO_VIRTUAL_NUMBER}`; 
-        }
         try {
-          // Send via Twilio
-          await twilioClient.messages.create({
-            body: reminder.message,
-            to: toPhone,
-            from: process.env.TWILIO_PHONE_NUMBER,
+          // --- EMAIL TO SMS LOGIC ---
+          // Format: 1234567890@vtext.com (Verizon example)
+          // You can store the carrier gateway in your DB or hardcode it
+          const gateway = process.env.SMS_GATEWAY; // e.g., "vtext.com"
+          const recipientEmail = `${reminder.phone_number.replace(/\D/g, '')}@${gateway}`;
+
+          await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: recipientEmail,
+            subject: '', // Most SMS gateways ignore the subject
+            text: reminder.message,
           });
 
-          // Mark as sent
           await supabase
             .from('reminders')
             .update({ status: 'sent' })
@@ -64,26 +55,19 @@ export async function GET(request: Request) {
           return { id: reminder.id, success: true };
         } catch (err: any) {
           console.error(`Failed to send reminder ${reminder.id}:`, err);
-          
-          // Mark as failed so we don't retry forever
           await supabase
             .from('reminders')
             .update({ status: 'failed' })
             .eq('id', reminder.id);
 
-          return { id: reminder.id, success: false, error: err.message };
+          return { id: reminder.id, success: false };
         }
       })
     );
 
-    return NextResponse.json({ 
-      success: true, 
-      processed: results.length,
-      details: results 
-    });
+    return NextResponse.json({ success: true, processed: results.length });
 
   } catch (error: any) {
-    console.error('Cron job error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

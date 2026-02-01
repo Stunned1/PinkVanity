@@ -6,7 +6,7 @@ export function ReminderPoller() {
     // The "Mailman" routine
     const checkMail = async () => {
       console.log('👀 Checking for due reminders...');
-      await fetch('/api/cron/process-reminders');
+      await fetch('/api/cron/process-reminders/');
     };
 
     // Check immediately, then every 60 seconds
